@@ -399,8 +399,10 @@
         </div>
         <div class="tab-bar" role="tablist" aria-label="체험관 탭">
           <button class="tab-btn" id="tab-nursemix" role="tab" aria-selected="true" aria-controls="panel-nursemix">너스mix</button>
+          <span id="dynamicTabBtns" style="display:contents;"></span>
           <button class="tab-btn ghost" id="tab-submit" role="tab" aria-selected="false" aria-controls="panel-submit">+ 내 서비스 올리기</button>
         </div>
+        <div id="dynamicTabPanels"></div>
 
         <div class="tab-panel" id="panel-nursemix" role="tabpanel" aria-labelledby="tab-nursemix">
           <div class="tryit-grid">
@@ -494,15 +496,15 @@
         </div>
         <p class="block-desc">같은 부서, 같은 고민. 면허 인증 후 바로 맞는 채널에 들어갈 수 있어요.</p>
       </div>
-      <div class="ward-grid">
-        <div class="ward-card reveal"><h3>중환자실 (ICU)</h3><div class="ward-meta">312명 활동 중</div><div class="ward-snip">"CRRT 라인 인수인계, 다들 어떤 순서로 보세요?"</div></div>
-        <div class="ward-card reveal"><h3>응급실 (ER)</h3><div class="ward-meta">268명 활동 중</div><div class="ward-snip">"트리아지 메모, 음성으로 받아쓰기 해봤어요"</div></div>
-        <div class="ward-card reveal"><h3>수술실·회복실</h3><div class="ward-meta">154명 활동 중</div><div class="ward-snip">"기구 카운트 체크리스트 자동화 공유합니다"</div></div>
-        <div class="ward-card reveal"><h3>병동·외래</h3><div class="ward-meta">401명 활동 중</div><div class="ward-snip">"낙상 교육자료, 보호자용으로 쉽게 바꿔봤어요"</div></div>
-        <div class="ward-card reveal"><h3>요양·재활</h3><div class="ward-meta">187명 활동 중</div><div class="ward-snip">"장기요양 서식, 반복 입력 줄이는 법 있을까요"</div></div>
-        <div class="ward-card reveal"><h3>보건교사·산업간호사</h3><div class="ward-meta">129명 활동 중</div><div class="ward-snip">"응급처치 안내문 다국어로 만들었어요"</div></div>
-        <div class="ward-card reveal"><h3>신규간호사 (프리셉티)</h3><div class="ward-meta">233명 활동 중</div><div class="ward-snip">"첫 나이트, 뭐부터 봐야 할지 모르겠어요"</div></div>
-        <div class="ward-card reveal"><h3>해외취업·유학</h3><div class="ward-meta">96명 활동 중</div><div class="ward-snip">"NCLEX 공부 자료 정리 도구 만든 후기"</div></div>
+      <div class="ward-grid" id="wardGrid">
+        <div class="ward-card reveal" data-dept="중환자실"><h3>중환자실 (ICU)</h3><div class="ward-meta">312명 활동 중</div><div class="ward-snip">"CRRT 라인 인수인계, 다들 어떤 순서로 보세요?"</div></div>
+        <div class="ward-card reveal" data-dept="응급실"><h3>응급실 (ER)</h3><div class="ward-meta">268명 활동 중</div><div class="ward-snip">"트리아지 메모, 음성으로 받아쓰기 해봤어요"</div></div>
+        <div class="ward-card reveal" data-dept="수술실·회복실"><h3>수술실·회복실</h3><div class="ward-meta">154명 활동 중</div><div class="ward-snip">"기구 카운트 체크리스트 자동화 공유합니다"</div></div>
+        <div class="ward-card reveal" data-dept="병동·외래"><h3>병동·외래</h3><div class="ward-meta">401명 활동 중</div><div class="ward-snip">"낙상 교육자료, 보호자용으로 쉽게 바꿔봤어요"</div></div>
+        <div class="ward-card reveal" data-dept="요양·재활"><h3>요양·재활</h3><div class="ward-meta">187명 활동 중</div><div class="ward-snip">"장기요양 서식, 반복 입력 줄이는 법 있을까요"</div></div>
+        <div class="ward-card reveal" data-dept="보건교사·산업간호사"><h3>보건교사·산업간호사</h3><div class="ward-meta">129명 활동 중</div><div class="ward-snip">"응급처치 안내문 다국어로 만들었어요"</div></div>
+        <div class="ward-card reveal" data-dept="신규간호사(프리셉티)"><h3>신규간호사 (프리셉티)</h3><div class="ward-meta">233명 활동 중</div><div class="ward-snip">"첫 나이트, 뭐부터 봐야 할지 모르겠어요"</div></div>
+        <div class="ward-card reveal" data-dept="해외취업·유학"><h3>해외취업·유학</h3><div class="ward-meta">96명 활동 중</div><div class="ward-snip">"NCLEX 공부 자료 정리 도구 만든 후기"</div></div>
       </div>
     </div>
   </section>
@@ -513,21 +515,31 @@
         <div><div class="eyebrow">FEED</div><h2>가볍게 씁니다, 부담 없이</h2></div>
         <p class="block-desc">사진 한 장, 링크 하나, 투표 하나도 좋아요. 게시판 눈치 보지 않고 공유해요.</p>
       </div>
-      <div class="feed-grid">
+      <form class="mini-form reveal" id="postForm" style="max-width:620px;margin-bottom:28px;">
+        <div>
+          <label for="postBody">지금 공유하고 싶은 것</label>
+          <textarea id="postBody" required maxlength="280" placeholder="방금 만든 것, 궁금한 것, 그냥 하고 싶은 말..."></textarea>
+        </div>
+        <div class="chip-row" id="postTag">
+          <button type="button" class="chip tag-chip" data-v="day" aria-pressed="false">D · 데이</button>
+          <button type="button" class="chip tag-chip" data-v="evening" aria-pressed="false">E · 이브닝</button>
+          <button type="button" class="chip tag-chip" data-v="night" aria-pressed="false">N · 나이트</button>
+        </div>
+        <button type="submit" class="btn btn-primary" id="postSubmitBtn" style="align-self:flex-start;">공유하기</button>
+        <div class="submit-status" id="postStatus"></div>
+      </form>
+      <div class="feed-grid" id="feedGrid">
         <article class="feed-card reveal">
           <div class="feed-who"><span class="feed-name">ICU 3년차 올빼미</span><span class="tag night">N</span></div>
           <p class="feed-body">방금 만든 투약 드립 계산기 공유해요. 체중·처방 농도만 넣으면 mL/hr 바로 나와요.</p>
-          <span class="feed-stat">반응 48 · 저장 21</span>
         </article>
         <article class="feed-card reveal">
           <div class="feed-who"><span class="feed-name">외래 새싹</span><span class="tag day">D</span></div>
           <p class="feed-body">나이트 끝나고 번아웃 어떻게 푸세요? 다들 본인만의 루틴 있나요.</p>
-          <span class="feed-stat">댓글 36 · 반응 59</span>
         </article>
         <article class="feed-card reveal">
           <div class="feed-who"><span class="feed-name">보건교사 10년</span><span class="tag evening">E</span></div>
           <p class="feed-body">학생 보호자용 응급처치 안내문, AI로 베트남어·중국어 번역본까지 만들었어요.</p>
-          <span class="feed-stat">저장 77 · 반응 112</span>
         </article>
       </div>
     </div>
@@ -542,7 +554,7 @@
       <div class="filelist reveal">
         <table>
           <thead><tr><th>자료</th><th>설명</th><th>저장</th></tr></thead>
-          <tbody>
+          <tbody id="fileListBody">
             <tr><td class="fname" data-ext="md">SBAR_인수인계_프롬프트.md</td><td class="fdesc">음성 메모를 SBAR 형식으로 정리하는 프롬프트</td><td class="fcount">2,104</td></tr>
             <tr><td class="fname" data-ext="md">NANDA_간호진단_추천_프롬프트.md</td><td class="fdesc">사례를 입력하면 관련 간호진단 후보를 제안</td><td class="fcount">1,532</td></tr>
             <tr><td class="fname" data-ext="xlsx">투약계산_공식_시트.xlsx</td><td class="fdesc">드립·희석·소아 용량 계산 공식 모음</td><td class="fcount">3,318</td></tr>
@@ -621,6 +633,12 @@
   var sb = (SUPABASE_URL.indexOf("YOUR_") !== 0 && window.supabase)
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     : null;
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
 
   // ---- 로그인 (널스링크) ----
   var loginOverlay = document.getElementById("loginOverlay");
@@ -775,22 +793,62 @@
     items.forEach(function(it){ it.classList.add("in"); });
   }
 
-  // ---- TRY IT: branch tabs ----
+  // ---- TRY IT: branch tabs (static demo + dynamic 승인된 서비스) ----
   var tabs = [
     {btn:"tab-nursemix", panel:"panel-nursemix", url:'<a href="https://nurse-mix.vercel.app/" target="_blank" rel="noopener">nurse-mix.vercel.app ↗</a>', badge:'<span class="live-dot"></span>실제 운영 중 · 누적 655명 체험'},
     {btn:"tab-submit", panel:"panel-submit", url:"다음 체험, 당신의 서비스일 수 있어요", badge:"등록 대기 중인 탭"}
   ];
-  tabs.forEach(function(t){
-    document.getElementById(t.btn).addEventListener("click", function(){
-      tabs.forEach(function(o){
-        var isActive = o.btn === t.btn;
-        document.getElementById(o.btn).setAttribute("aria-selected", isActive);
-        document.getElementById(o.panel).hidden = !isActive;
-      });
-      document.getElementById("chromeUrl").innerHTML = t.url;
-      document.querySelector(".live-badge").innerHTML = t.badge;
+  function selectTab(t){
+    tabs.forEach(function(o){
+      var isActive = o.btn === t.btn;
+      document.getElementById(o.btn).setAttribute("aria-selected", isActive);
+      document.getElementById(o.panel).hidden = !isActive;
     });
-  });
+    document.getElementById("chromeUrl").innerHTML = t.url;
+    document.querySelector(".live-badge").innerHTML = t.badge;
+  }
+  function attachTab(t){
+    document.getElementById(t.btn).addEventListener("click", function(){ selectTab(t); });
+  }
+  tabs.forEach(attachTab);
+
+  if (sb){
+    sb.from("services").select("*").eq("status", "approved").order("reviewed_at", { ascending:false }).then(function(res){
+      if (res.error || !res.data) return;
+      var btnWrap = document.getElementById("dynamicTabBtns");
+      var panelWrap = document.getElementById("dynamicTabPanels");
+      res.data.forEach(function(svc){
+        var btnId = "tab-svc-" + svc.id;
+        var panelId = "panel-svc-" + svc.id;
+        var btn = document.createElement("button");
+        btn.className = "tab-btn"; btn.id = btnId; btn.setAttribute("role","tab");
+        btn.setAttribute("aria-selected","false"); btn.setAttribute("aria-controls",panelId);
+        btn.textContent = svc.name;
+        btnWrap.appendChild(btn);
+
+        var panel = document.createElement("div");
+        panel.className = "tab-panel"; panel.id = panelId; panel.setAttribute("role","tabpanel");
+        panel.setAttribute("aria-labelledby", btnId); panel.hidden = true;
+        panel.innerHTML =
+          '<div class="submit-panel" style="text-align:left;max-width:460px;">' +
+            (svc.department ? '<div class="challenge-pill">DEPT · ' + escapeHtml(svc.department) + '</div>' : '') +
+            '<h3 style="font-size:20px;">' + escapeHtml(svc.name) + '</h3>' +
+            '<p style="color:var(--ink-soft);font-size:14px;margin-top:6px;margin-bottom:18px;">' + escapeHtml(svc.description) + '</p>' +
+            '<a class="btn btn-primary" href="' + encodeURI(svc.url) + '" target="_blank" rel="noopener">바로가기 ↗</a>' +
+            '<div class="rx-footnote">제출: ' + escapeHtml(svc.submitter_name) + '</div>' +
+          '</div>';
+        panelWrap.appendChild(panel);
+
+        var t = {
+          btn: btnId, panel: panelId,
+          url: '<a href="' + encodeURI(svc.url) + '" target="_blank" rel="noopener">' + escapeHtml(svc.url.replace(/^https?:\/\//,"")) + ' ↗</a>',
+          badge: "멤버가 올린 서비스"
+        };
+        tabs.push(t);
+        attachTab(t);
+      });
+    });
+  }
 
   // ---- TRY IT: nurse-mix 미니 처방 체험 (데모용 간이 버전) ----
   var rxTypes = [
@@ -867,4 +925,99 @@
       document.getElementById("serviceForm").reset();
     });
   });
+
+  // ---- FEED: 실데이터 ----
+  var feedGrid = document.getElementById("feedGrid");
+  var tagLabel = { day:"D", evening:"E", night:"N" };
+
+  function renderPosts(posts){
+    feedGrid.innerHTML = posts.map(function(p){
+      return '<article class="feed-card reveal in">' +
+        '<div class="feed-who"><span class="feed-name">' + escapeHtml(p.author_name) + '</span>' +
+        (p.tag ? '<span class="tag ' + p.tag + '">' + tagLabel[p.tag] + '</span>' : '') + '</div>' +
+        '<p class="feed-body">' + escapeHtml(p.body) + '</p>' +
+      '</article>';
+    }).join("");
+  }
+
+  if (sb){
+    sb.from("posts").select("*").order("created_at", { ascending:false }).limit(9).then(function(res){
+      if (!res.error && res.data) renderPosts(res.data);
+    });
+  }
+
+  var selectedTag = null;
+  document.querySelectorAll("#postTag .chip").forEach(function(chip){
+    chip.addEventListener("click", function(){
+      var v = chip.getAttribute("data-v");
+      var turningOn = selectedTag !== v;
+      document.querySelectorAll("#postTag .chip").forEach(function(c){ c.setAttribute("aria-pressed","false"); });
+      selectedTag = turningOn ? v : null;
+      if (turningOn) chip.setAttribute("aria-pressed","true");
+    });
+  });
+
+  document.getElementById("postForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var statusEl = document.getElementById("postStatus");
+    if (!sb || !currentUser){
+      statusEl.className = "submit-status show err";
+      statusEl.textContent = "로그인 후 공유할 수 있어요.";
+      loginOverlay.className = "login-overlay show";
+      return;
+    }
+    var body = document.getElementById("postBody").value.trim();
+    var btn = document.getElementById("postSubmitBtn");
+    btn.disabled = true;
+    statusEl.className = "submit-status show pending";
+    statusEl.textContent = "올리는 중...";
+    sb.from("posts").insert({
+      user_id: currentUser.id,
+      author_name: currentUser.email.split("@")[0],
+      body: body,
+      tag: selectedTag
+    }).select().then(function(res){
+      btn.disabled = false;
+      if (res.error || !res.data){
+        statusEl.className = "submit-status show err";
+        statusEl.textContent = "공유에 실패했어요: " + (res.error ? res.error.message : "");
+        return;
+      }
+      statusEl.className = "submit-status show ok";
+      statusEl.textContent = "공유 완료!";
+      document.getElementById("postForm").reset();
+      document.querySelectorAll("#postTag .chip").forEach(function(c){ c.setAttribute("aria-pressed","false"); });
+      selectedTag = null;
+      sb.from("posts").select("*").order("created_at", { ascending:false }).limit(9).then(function(r){
+        if (!r.error && r.data) renderPosts(r.data);
+      });
+    });
+  });
+
+  // ---- TOOLBOX: 실데이터 ----
+  if (sb){
+    sb.from("files").select("*").order("save_count", { ascending:false }).then(function(res){
+      if (res.error || !res.data) return;
+      document.getElementById("fileListBody").innerHTML = res.data.map(function(f){
+        return '<tr><td class="fname" data-ext="' + escapeHtml(f.ext) + '">' + escapeHtml(f.name) + '</td>' +
+          '<td class="fdesc">' + escapeHtml(f.description) + '</td>' +
+          '<td class="fcount">' + f.save_count.toLocaleString() + '</td></tr>';
+      }).join("");
+    });
+  }
+
+  // ---- WARDS: 부서별 실제 활동 인원수 ----
+  if (sb){
+    sb.rpc("ward_counts").then(function(res){
+      if (res.error || !res.data) return;
+      var byDept = {};
+      res.data.forEach(function(row){ byDept[row.department] = row.member_count; });
+      document.querySelectorAll("#wardGrid .ward-card").forEach(function(card){
+        var dept = card.getAttribute("data-dept");
+        if (byDept[dept] !== undefined){
+          card.querySelector(".ward-meta").textContent = byDept[dept] + "명 활동 중";
+        }
+      });
+    });
+  }
 </script>

@@ -74,3 +74,56 @@ create policy "admin만 승인/반려 가능" on services
   for update using (
     exists (select 1 from profiles where id = auth.uid() and role = 'admin')
   );
+
+-- 4) FEED 글. services와 같은 패턴 — user_id는 nullable, author_name을 denormalize해서
+--    로그인 전/시드 데이터도 표시할 수 있게 한다.
+create table posts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references profiles(id) on delete set null,
+  author_name text not null,
+  body text not null,
+  tag text check (tag in ('day','evening','night')),
+  created_at timestamptz not null default now()
+);
+
+alter table posts enable row level security;
+
+create policy "피드는 전체 공개" on posts for select using (true);
+create policy "로그인한 본인만 글쓰기" on posts
+  for insert with check (auth.uid() = user_id);
+
+-- 5) TOOLBOX 자료함. 큐레이션 콘텐츠라 insert는 운영진이 대시보드(service_role)에서만 한다.
+create table files (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  description text not null,
+  ext text not null,
+  save_count integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+alter table files enable row level security;
+
+create policy "자료함은 전체 공개" on files for select using (true);
+
+-- 6) 부서 카드 활동 인원수 — profiles는 RLS로 본인만 조회 가능하므로, 인원수만
+--    집계해서 공개하는 security definer 함수로 우회한다 (개인정보 노출 없음).
+create or replace function ward_counts()
+returns table(department text, member_count bigint)
+language sql security definer set search_path = public as $$
+  select department, count(*) from profiles where department is not null group by department;
+$$;
+grant execute on function ward_counts() to anon, authenticated;
+
+-- 시드 데이터 — 기존 랜딩페이지에 하드코딩돼 있던 문구를 그대로 이식 (화면 변화 없음).
+insert into files (name, description, ext, save_count) values
+  ('SBAR_인수인계_프롬프트.md', '음성 메모를 SBAR 형식으로 정리하는 프롬프트', 'md', 2104),
+  ('NANDA_간호진단_추천_프롬프트.md', '사례를 입력하면 관련 간호진단 후보를 제안', 'md', 1532),
+  ('투약계산_공식_시트.xlsx', '드립·희석·소아 용량 계산 공식 모음', 'xlsx', 3318),
+  ('식약처_의약품API_연동가이드.md', '실시간 의약품 정보 조회 도구에 붙이는 법', 'md', 861),
+  ('신규간호사_온보딩_체크리스트.pdf', '프리셉터십 첫 3개월 점검 항목', 'pdf', 2660);
+
+insert into posts (author_name, body, tag) values
+  ('ICU 3년차 올빼미', '방금 만든 투약 드립 계산기 공유해요. 체중·처방 농도만 넣으면 mL/hr 바로 나와요.', 'night'),
+  ('외래 새싹', '나이트 끝나고 번아웃 어떻게 푸세요? 다들 본인만의 루틴 있나요.', 'day'),
+  ('보건교사 10년', '학생 보호자용 응급처치 안내문, AI로 베트남어·중국어 번역본까지 만들었어요.', 'evening');
