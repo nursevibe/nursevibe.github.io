@@ -233,6 +233,16 @@
   .submit-status.ok{background:var(--accent-soft);color:var(--accent-text);}
   .submit-status.err{background:#C85A1E;color:#FFF6EE;}
   .submit-status.pending{background:var(--bg-sunken);color:var(--ink-faint);}
+
+  /* ---------- 로그인 모달 ---------- */
+  .login-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:20px;z-index:100;}
+  .login-overlay.show{display:flex;}
+  .login-card{background:var(--bg-raised);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px;width:100%;max-width:360px;position:relative;}
+  .login-card h3{font-size:17px;margin-bottom:6px;}
+  .login-card p{font-size:13.5px;color:var(--ink-soft);margin-bottom:18px;}
+  .login-close{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--ink-faint);font-size:18px;cursor:pointer;line-height:1;}
+  .login-close:hover{color:var(--ink);}
+  .nav-actions .login[data-signed-in]{color:var(--accent-text);}
   .chip-row{display:flex;flex-wrap:wrap;gap:8px;}
   .chip{
     font-family:var(--font-mono);
@@ -314,11 +324,27 @@
       <a href="#toolbox">도구함</a>
     </div>
     <div class="nav-actions">
-      <a class="login" href="#">로그인</a>
+      <a class="login" href="#" id="loginLink">로그인</a>
       <a class="btn btn-primary" href="#join">커뮤니티 입장</a>
     </div>
   </nav>
 </header>
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <button type="button" class="login-close" id="loginClose" aria-label="닫기">×</button>
+    <h3>로그인</h3>
+    <p>이메일로 받는 매직링크로 비밀번호 없이 로그인해요.</p>
+    <form class="mini-form" id="loginForm">
+      <div>
+        <label for="loginEmail">이메일</label>
+        <input type="email" id="loginEmail" required placeholder="you@example.com">
+      </div>
+      <button type="submit" class="btn btn-primary" id="loginSubmitBtn">매직링크 보내기</button>
+      <div class="submit-status" id="loginStatus"></div>
+    </form>
+  </div>
+</div>
 
 <main>
   <section class="hero">
@@ -571,11 +597,86 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
   // TODO: Supabase 프로젝트 만든 뒤 Settings > API 에서 복사해 채우기
-  var SUPABASE_URL = "YOUR_SUPABASE_URL";
-  var SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+  var SUPABASE_URL = "https://ppdwmwkchiicxjerktbk.supabase.co";
+  var SUPABASE_ANON_KEY = "sb_publishable_m7EIuGMloH4YrHiEVLJ0FA_tfModprk";
   var sb = (SUPABASE_URL.indexOf("YOUR_") !== 0 && window.supabase)
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     : null;
+
+  // ---- 로그인 (매직링크) ----
+  var loginOverlay = document.getElementById("loginOverlay");
+  var loginLink = document.getElementById("loginLink");
+  var loginStatus = document.getElementById("loginStatus");
+  var currentUser = null;
+
+  function closeLogin(){ loginOverlay.className = "login-overlay"; }
+
+  function setSignedIn(user){
+    currentUser = user;
+    if (user){
+      loginLink.textContent = "로그아웃 (" + user.email + ")";
+      loginLink.setAttribute("data-signed-in", "1");
+    } else {
+      loginLink.textContent = "로그인";
+      loginLink.removeAttribute("data-signed-in");
+    }
+  }
+
+  function ensureProfile(user){
+    sb.from("profiles").select("id").eq("id", user.id).maybeSingle().then(function(res){
+      if (!res.data){
+        sb.from("profiles").insert({ id: user.id, display_name: user.email.split("@")[0] });
+      }
+    });
+  }
+
+  if (sb){
+    sb.auth.getSession().then(function(res){
+      var user = res.data.session && res.data.session.user;
+      setSignedIn(user || null);
+      if (user) ensureProfile(user);
+    });
+    sb.auth.onAuthStateChange(function(_event, session){
+      var user = session && session.user;
+      setSignedIn(user || null);
+      if (user) ensureProfile(user);
+    });
+  }
+
+  loginLink.addEventListener("click", function(e){
+    e.preventDefault();
+    if (currentUser){
+      sb.auth.signOut();
+      return;
+    }
+    loginOverlay.className = "login-overlay show";
+  });
+  document.getElementById("loginClose").addEventListener("click", closeLogin);
+  loginOverlay.addEventListener("click", function(e){ if (e.target === loginOverlay) closeLogin(); });
+
+  document.getElementById("loginForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    if (!sb){
+      loginStatus.className = "submit-status show err";
+      loginStatus.textContent = "로그인 기능이 아직 연결 중이에요.";
+      return;
+    }
+    var email = document.getElementById("loginEmail").value.trim();
+    var btn = document.getElementById("loginSubmitBtn");
+    btn.disabled = true;
+    loginStatus.className = "submit-status show pending";
+    loginStatus.textContent = "링크 보내는 중...";
+    sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: window.location.href } }).then(function(res){
+      btn.disabled = false;
+      if (res.error){
+        loginStatus.className = "submit-status show err";
+        loginStatus.textContent = "전송 실패: " + res.error.message;
+        return;
+      }
+      loginStatus.className = "submit-status show ok";
+      loginStatus.textContent = "메일을 보냈어요! 메일함에서 링크를 눌러 로그인하세요.";
+    });
+  });
 
   // vitals ticker — duplicated once for seamless 50% loop
   var stats = [

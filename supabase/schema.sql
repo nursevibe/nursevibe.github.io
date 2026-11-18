@@ -57,6 +57,8 @@ alter table services enable row level security;
 
 create policy "본인 프로필 조회/수정" on profiles
   for select using (auth.uid() = id);
+create policy "본인 프로필 생성" on profiles
+  for insert with check (auth.uid() = id);
 create policy "본인 프로필 수정" on profiles
   for update using (auth.uid() = id);
 
