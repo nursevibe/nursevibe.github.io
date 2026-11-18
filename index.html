@@ -1,0 +1,621 @@
+<title>NURSEVIBE — 간호사 바이브코딩 커뮤니티</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  /* ---------------------------------------------------------
+     TOKENS
+     Concept: a shift-handoff whiteboard rebuilt as a terminal.
+     Ink is cool near-black/near-white, ground is a desaturated
+     cool neutral (an editor canvas, not warm paper). Mint is the
+     one accent spent on CTAs, links + the live "vitals" readout.
+     Pulse is reserved for a single literal live-dot, never used
+     as a design accent. D / E / N (데이·이브닝·나이트) are real
+     shift codes, recolored like syntax-highlight tokens, reused
+     as a structural tag system across feed + showcase content.
+  --------------------------------------------------------- */
+  :root{
+    --bg:#0B0D0F;
+    --bg-raised:#141819;
+    --bg-sunken:#101314;
+    --ink:#E7EDEA;
+    --ink-soft:#8C9893;
+    --ink-faint:#596460;
+    --line:rgba(231,237,234,.12);
+    --accent:#2EE6A8;
+    --accent-text:#5FF4C4;
+    --accent-soft:rgba(46,230,168,.16);
+    --accent-on:#04150F;
+    --pulse:#FF8A3D;
+    --shift-day:#E8B84B;
+    --shift-evening:#E36FA0;
+    --shift-night:#2EE6A8;
+    --radius:10px;
+    --font-kr: "Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+    --font-mono: ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 14px 32px -16px rgba(0,0,0,.6);
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#F3F7F5;
+      --bg-raised:#E8EFEB;
+      --bg-sunken:#DEE8E2;
+      --ink:#0E1512;
+      --ink-soft:#49584F;
+      --ink-faint:#7A8C81;
+      --line:rgba(14,21,18,.14);
+      --accent:#0E8F63;
+      --accent-text:#0B6E4C;
+      --accent-soft:rgba(14,143,99,.13);
+      --accent-on:#F3FBF7;
+      --pulse:#C85A1E;
+      --shift-day:#92680C;
+      --shift-evening:#A23A6D;
+      --shift-night:#0E8F63;
+      --shadow: 0 1px 2px rgba(14,21,18,.05), 0 10px 26px -14px rgba(14,21,18,.18);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0B0D0F;--bg-raised:#141819;--bg-sunken:#101314;
+    --ink:#E7EDEA;--ink-soft:#8C9893;--ink-faint:#596460;
+    --line:rgba(231,237,234,.12);
+    --accent:#2EE6A8;--accent-text:#5FF4C4;--accent-soft:rgba(46,230,168,.16);--accent-on:#04150F;
+    --pulse:#FF8A3D;--shift-day:#E8B84B;--shift-evening:#E36FA0;--shift-night:#2EE6A8;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 14px 32px -16px rgba(0,0,0,.6);
+  }
+  :root[data-theme="light"]{
+    --bg:#F3F7F5;--bg-raised:#E8EFEB;--bg-sunken:#DEE8E2;
+    --ink:#0E1512;--ink-soft:#49584F;--ink-faint:#7A8C81;
+    --line:rgba(14,21,18,.14);
+    --accent:#0E8F63;--accent-text:#0B6E4C;--accent-soft:rgba(14,143,99,.13);--accent-on:#F3FBF7;
+    --pulse:#C85A1E;--shift-day:#92680C;--shift-evening:#A23A6D;--shift-night:#0E8F63;
+    --shadow: 0 1px 2px rgba(14,21,18,.05), 0 10px 26px -14px rgba(14,21,18,.18);
+  }
+
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--font-kr);
+    font-size:16px;line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  img,svg{max-width:100%;}
+  a{color:inherit;text-decoration:none;}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px;}
+  h1,h2,h3{font-family:var(--font-kr);font-weight:800;letter-spacing:-0.02em;text-wrap:balance;margin:0;}
+  p{margin:0;}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px;}
+  .eyebrow{
+    font-family:var(--font-mono);font-size:12px;font-weight:600;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--accent-text);
+    display:flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{content:"//";color:var(--accent);font-weight:700;flex:none;}
+  .btn{
+    font-family:var(--font-mono);font-size:13px;font-weight:600;letter-spacing:.02em;
+    padding:13px 22px;border-radius:8px;border:1px solid transparent;
+    display:inline-flex;align-items:center;gap:8px;cursor:pointer;white-space:nowrap;
+    transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .btn:hover{transform:translateY(-1px);}
+  .btn-primary{background:var(--accent);color:var(--accent-on);}
+  .btn-primary:hover{box-shadow:0 8px 20px -8px var(--accent);}
+  .btn-ghost{background:transparent;border-color:var(--line);color:var(--ink);}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent-text);}
+
+  /* reveal-on-scroll */
+  .reveal{opacity:0;transform:translateY(14px);transition:opacity .6s ease, transform .6s ease;}
+  .reveal.in{opacity:1;transform:none;}
+  @media (prefers-reduced-motion: reduce){
+    .reveal{opacity:1;transform:none;transition:none;}
+  }
+
+  /* ---------- HEADER ---------- */
+  header{
+    position:sticky;top:0;z-index:40;background:color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
+  }
+  .nav{display:flex;align-items:center;justify-content:space-between;height:68px;gap:20px;}
+  .logo{font-family:var(--font-mono);font-weight:700;font-size:15px;letter-spacing:.01em;}
+  .logo span{color:var(--accent-text);}
+  .nav-links{display:flex;gap:28px;font-size:14px;color:var(--ink-soft);}
+  .nav-links a:hover{color:var(--ink);}
+  .nav-actions{display:flex;align-items:center;gap:14px;}
+  .nav-actions a.login{font-family:var(--font-mono);font-size:13px;color:var(--ink-soft);}
+  @media (max-width:760px){ .nav-links{display:none;} }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    padding:84px 0 0;position:relative;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:34px 34px;
+    background-position:center top;
+    mask-image:linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
+  }
+  .hero-inner{padding-bottom:56px;}
+  .hero h1{font-size:clamp(34px,5.6vw,60px);line-height:1.14;}
+  .hero-cursor{display:inline-block;width:.09em;height:.82em;background:var(--accent);margin-left:.08em;vertical-align:-0.08em;animation:caret 1s step-end infinite;}
+  @keyframes caret{0%,49%{opacity:1;}50%,100%{opacity:0;}}
+  @media (prefers-reduced-motion: reduce){ .hero-cursor{animation:none;opacity:1;} }
+  .hero-sub{max-width:560px;color:var(--ink-soft);font-size:17px;margin-top:20px;}
+  .hero-ctas{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px;}
+  .hero-eyebrow{margin-bottom:22px;}
+
+  /* vitals ticker */
+  .ticker-shell{
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    background:var(--bg-raised);overflow:hidden;
+  }
+  .ticker{display:flex;width:max-content;animation:scroll 32s linear infinite;}
+  .ticker:hover{animation-play-state:paused;}
+  @keyframes scroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+  @media (prefers-reduced-motion: reduce){ .ticker{animation:none;} }
+  .ticker-item{
+    font-family:var(--font-mono);font-size:13px;color:var(--ink-soft);
+    display:flex;align-items:center;gap:10px;padding:13px 28px;white-space:nowrap;
+    font-variant-numeric:tabular-nums;border-right:1px solid var(--line);
+  }
+  .live-dot{width:7px;height:7px;border-radius:50%;background:var(--pulse);flex:none;
+    animation:pulse 1.8s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  @media (prefers-reduced-motion: reduce){ .live-dot{animation:none;} }
+  .ticker-item b{color:var(--ink);font-weight:600;}
+
+  /* ---------- SECTION shell ---------- */
+  section.block{padding:88px 0;border-bottom:1px solid var(--line);}
+  .block-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:40px;flex-wrap:wrap;}
+  .block-head h2{font-size:clamp(26px,3.4vw,36px);margin-top:14px;}
+  .block-desc{max-width:480px;color:var(--ink-soft);font-size:15px;}
+
+  /* shift tag */
+  .tag{
+    font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.04em;
+    padding:3px 8px;border-radius:5px;border:1px solid currentColor;display:inline-flex;
+    align-items:center;gap:5px;
+  }
+  .tag.day{color:var(--shift-day);} .tag.evening{color:var(--shift-evening);} .tag.night{color:var(--shift-night);}
+  .tag::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;}
+
+  /* ---------- WARDS grid ---------- */
+  .ward-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;}
+  .ward-card{
+    background:var(--bg-raised);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s ease, transform .15s ease;
+  }
+  .ward-card:hover{border-color:var(--accent);transform:translateY(-2px);}
+  .ward-card h3{font-size:16px;font-weight:700;}
+  .ward-meta{font-family:var(--font-mono);font-size:12px;color:var(--ink-faint);}
+  .ward-snip{font-size:13.5px;color:var(--ink-soft);border-top:1px solid var(--line);padding-top:10px;}
+
+  /* ---------- FEED ---------- */
+  .feed-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  @media (max-width:860px){ .feed-grid{grid-template-columns:1fr;} }
+  .feed-card{background:var(--bg-raised);border:1px solid var(--line);border-radius:var(--radius);padding:22px;display:flex;flex-direction:column;gap:14px;}
+  .feed-who{display:flex;align-items:center;justify-content:space-between;}
+  .feed-name{font-size:13.5px;font-weight:700;}
+  .feed-body{font-size:14.5px;color:var(--ink);line-height:1.65;}
+  .feed-stat{font-family:var(--font-mono);font-size:12px;color:var(--ink-faint);}
+
+  /* ---------- TRY IT (live branch tabs) ---------- */
+  .tryit-shell{border:1px solid var(--line);border-radius:20px;overflow:hidden;background:var(--bg-raised);box-shadow:var(--shadow);}
+  .browser-chrome{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid var(--line);background:var(--bg-sunken);}
+  .chrome-dots{display:flex;gap:6px;}
+  .chrome-dots span{width:10px;height:10px;border-radius:50%;}
+  .chrome-dots span:nth-child(1){background:#FF5F57;}
+  .chrome-dots span:nth-child(2){background:#FEBC2E;}
+  .chrome-dots span:nth-child(3){background:#28C840;}
+  .chrome-url{font-family:var(--font-mono);font-size:12.5px;color:var(--ink-faint);display:flex;align-items:center;gap:8px;margin-left:4px;}
+  .chrome-url a{color:var(--accent-text);font-weight:600;}
+  .live-badge{margin-left:auto;display:flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);}
+  .tab-bar{display:flex;gap:4px;padding:14px 18px 0;}
+  .tab-btn{
+    font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--ink-faint);
+    background:transparent;border:1px solid var(--line);border-bottom:none;
+    padding:10px 18px;border-radius:10px 10px 0 0;cursor:pointer;
+  }
+  .tab-btn[aria-selected="true"]{color:var(--ink);background:var(--bg);border-color:var(--line);}
+  .tab-btn.ghost{color:var(--accent-text);}
+  .tab-panel{padding:30px;}
+  .tab-panel[hidden]{display:none;}
+  .tryit-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;}
+  @media (max-width:780px){ .tryit-grid{grid-template-columns:1fr;} }
+  .mini-form{display:flex;flex-direction:column;gap:14px;}
+  .mini-form label{font-size:12.5px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:6px;}
+  .mini-form input, .mini-form select{
+    width:100%;font-family:var(--font-kr);font-size:14px;padding:11px 12px;
+    border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);
+  }
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{
+    font-family:var(--font-mono);
+    font-size:13px;padding:8px 13px;border-radius:7px;border:1px solid var(--line);
+    background:var(--bg);color:var(--ink-soft);cursor:pointer;
+  }
+  .chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent-text);background:var(--accent-soft);}
+  .result-pane{
+    border:1px dashed var(--line);border-radius:var(--radius);padding:22px;
+    display:flex;align-items:center;justify-content:center;text-align:center;color:var(--ink-faint);font-size:13.5px;min-height:220px;
+  }
+  .rx-card{border:1px solid var(--line);border-radius:var(--radius);padding:22px;background:var(--bg);width:100%;}
+  .rx-code{font-family:var(--font-mono);font-size:11px;color:var(--accent-text);letter-spacing:.08em;}
+  .rx-name{font-size:20px;font-weight:800;margin-top:6px;}
+  .rx-desc{font-size:13.5px;color:var(--ink-soft);margin-top:8px;}
+  .rx-jobs{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;}
+  .rx-jobs span{font-family:var(--font-mono);font-size:11.5px;padding:4px 9px;border-radius:6px;background:var(--accent-soft);color:var(--accent-text);}
+  .burnout{margin-top:16px;}
+  .burnout-label{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);margin-bottom:6px;}
+  .burnout-bar{height:6px;border-radius:999px;background:var(--line);overflow:hidden;}
+  .burnout-fill{height:100%;border-radius:999px;transition:background .2s ease;}
+  .rx-footnote{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-faint);}
+  .rx-footnote a{color:var(--accent-text);font-weight:600;}
+  .more-tools{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:16px;font-size:13px;}
+  .more-tools a{color:var(--ink-soft);}
+  .more-tools a:hover{color:var(--accent-text);}
+  .submit-panel{text-align:center;max-width:460px;margin:0 auto;}
+  .submit-steps{display:flex;justify-content:center;gap:22px;margin:20px 0;flex-wrap:wrap;font-family:var(--font-mono);font-size:12.5px;color:var(--ink-faint);}
+  .challenge-pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:12px;color:var(--accent-text);background:var(--accent-soft);padding:7px 14px;border-radius:7px;margin-bottom:18px;}
+
+  /* ---------- TOOLBOX (file listing) ---------- */
+  .filelist{border:1px solid var(--line);border-radius:var(--radius);overflow-x:auto;background:var(--bg-raised);}
+  .filelist table{width:100%;border-collapse:collapse;min-width:620px;}
+  .filelist th{
+    text-align:left;font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--ink-faint);padding:14px 20px;border-bottom:1px solid var(--line);
+  }
+  .filelist td{padding:16px 20px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:top;}
+  .filelist tr:last-child td{border-bottom:none;}
+  .filelist tr:hover td{background:var(--accent-soft);}
+  .fname{font-family:var(--font-mono);font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:9px;}
+  .fname::before{content:"";width:7px;height:7px;border-radius:2px;flex:none;background:var(--ink-faint);}
+  .fname[data-ext="md"]::before{background:var(--accent);}
+  .fname[data-ext="xlsx"]::before{background:var(--shift-day);}
+  .fname[data-ext="pdf"]::before{background:var(--shift-evening);}
+  .fdesc{color:var(--ink-soft);}
+  .fcount{font-family:var(--font-mono);color:var(--ink-faint);white-space:nowrap;font-variant-numeric:tabular-nums;}
+
+  /* ---------- JOIN steps ---------- */
+  .safe-note{max-width:620px;color:var(--ink-soft);font-size:14.5px;margin-top:14px;margin-bottom:36px;}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  @media (max-width:820px){ .steps{grid-template-columns:1fr;} }
+  .step{border:1px solid var(--line);border-radius:var(--radius);padding:24px;background:var(--bg-raised);}
+  .step .num{font-family:var(--font-mono);font-size:13px;color:var(--accent-text);font-weight:700;}
+  .step h3{font-size:16px;margin-top:10px;}
+  .step p{font-size:13.5px;color:var(--ink-soft);margin-top:8px;}
+
+  /* ---------- FAQ ---------- */
+  details{border-bottom:1px solid var(--line);padding:18px 0;}
+  details summary{cursor:pointer;font-weight:700;font-size:15.5px;list-style:none;display:flex;justify-content:space-between;align-items:center;}
+  details summary::-webkit-details-marker{display:none;}
+  details summary::after{content:"+";font-family:var(--font-mono);color:var(--ink-faint);font-weight:400;transition:transform .2s ease;}
+  details[open] summary::after{transform:rotate(45deg);}
+  details p{margin-top:12px;color:var(--ink-soft);font-size:14.5px;max-width:640px;}
+
+  footer{padding:48px 0 60px;}
+  .foot-top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;}
+  .foot-links{display:flex;gap:22px;font-size:13.5px;color:var(--ink-soft);flex-wrap:wrap;}
+  .foot-bottom{margin-top:36px;padding-top:20px;border-top:1px solid var(--line);font-family:var(--font-mono);font-size:12px;color:var(--ink-faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+</style>
+
+<header>
+  <nav class="nav wrap">
+    <a class="logo" href="#">NURSE<span>VIBE</span></a>
+    <div class="nav-links">
+      <a href="#tryit">체험관</a>
+      <a href="#wards">부서</a>
+      <a href="#feed">피드</a>
+      <a href="#toolbox">도구함</a>
+    </div>
+    <div class="nav-actions">
+      <a class="login" href="#">로그인</a>
+      <a class="btn btn-primary" href="#join">커뮤니티 입장</a>
+    </div>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <div class="eyebrow hero-eyebrow">FOR RN · SN · 보건교사 · 산업간호사</div>
+      <h1>그 반복 업무,<br>당신이 먼저 고칩니다<span class="hero-cursor" aria-hidden="true"></span></h1>
+      <p class="hero-sub reveal">코딩을 몰라도 됩니다. AI에게 말하듯 설명하면, 당신의 부서에 꼭 맞는 도구가 나옵니다. 인수인계·투약 계산·환자 교육까지 — 이미 동료들이 만들어 쓰고 있어요.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary" href="#tryit">체험관 바로 써보기</a>
+        <a class="btn btn-ghost" href="#wards">부서 채널 둘러보기</a>
+      </div>
+    </div>
+    <div class="ticker-shell">
+      <div class="ticker" id="ticker"></div>
+    </div>
+  </section>
+
+  <section class="block" id="tryit">
+    <div class="wrap">
+      <div class="block-head reveal">
+        <div>
+          <div class="eyebrow">TRY IT · BRANCH</div>
+          <h2>설명 말고, 실제로 켜져 있는 서비스를 눌러보세요</h2>
+        </div>
+        <p class="block-desc">여기는 카드로 소개만 하는 자리가 아니에요. 멤버가 직접 런칭한 서비스가 탭으로 하나씩 늘어나는 구조예요.</p>
+      </div>
+
+      <div class="tryit-shell reveal">
+        <div class="browser-chrome">
+          <div class="chrome-dots"><span></span><span></span><span></span></div>
+          <div class="chrome-url" id="chromeUrl"><a href="https://nurse-mix.vercel.app/" target="_blank" rel="noopener">nurse-mix.vercel.app ↗</a></div>
+          <div class="live-badge"><span class="live-dot"></span>실제 운영 중 · 누적 655명 체험</div>
+        </div>
+        <div class="tab-bar" role="tablist" aria-label="체험관 탭">
+          <button class="tab-btn" id="tab-nursemix" role="tab" aria-selected="true" aria-controls="panel-nursemix">너스mix</button>
+          <button class="tab-btn ghost" id="tab-submit" role="tab" aria-selected="false" aria-controls="panel-submit">+ 내 서비스 올리기</button>
+        </div>
+
+        <div class="tab-panel" id="panel-nursemix" role="tabpanel" aria-labelledby="tab-nursemix">
+          <div class="tryit-grid">
+            <form class="mini-form" id="rxForm">
+              <div>
+                <label for="rxBirth">생년월일</label>
+                <input type="date" id="rxBirth" required>
+              </div>
+              <div>
+                <label for="rxDept">근무 부서</label>
+                <select id="rxDept">
+                  <option>병동·외래</option><option>중환자실</option><option>응급실</option>
+                  <option>수술실·회복실</option><option>요양·재활</option><option>보건교사·산업간호사</option>
+                </select>
+              </div>
+              <div>
+                <label>지금 가장 힘든 점</label>
+                <div class="chip-row" id="rxPain">
+                  <button type="button" class="chip" data-v="업무량" aria-pressed="false">업무량</button>
+                  <button type="button" class="chip" data-v="사람 관계" aria-pressed="false">사람 관계</button>
+                  <button type="button" class="chip" data-v="미래 불안" aria-pressed="false">미래 불안</button>
+                  <button type="button" class="chip" data-v="체력 소진" aria-pressed="false">체력 소진</button>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary" style="justify-content:center;">미니 처방 받기</button>
+            </form>
+
+            <div id="rxResultWrap">
+              <div class="result-pane" id="rxPlaceholder">왼쪽에 입력하고 버튼을 누르면<br>여기에 미니 처방이 나와요</div>
+            </div>
+          </div>
+
+          <div class="more-tools">
+            <span style="color:var(--ink-faint);">같은 멤버들이 만든 다른 것들 →</span>
+            <a href="#toolbox">SBAR 인수인계 요약기</a>
+            <a href="#toolbox">투약 드립 계산기</a>
+            <a href="#toolbox">환자교육자료 다국어 생성기</a>
+            <a href="#toolbox">3교대 근무표 배정기</a>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="panel-submit" role="tabpanel" aria-labelledby="tab-submit" hidden>
+          <div class="submit-panel">
+            <div class="challenge-pill">CHALLENGE · 11월 · 인수인계 5분 단축하기</div>
+            <h3 style="font-size:20px;">당신이 만든 서비스도 여기 탭으로 올라와요</h3>
+            <p style="color:var(--ink-soft);font-size:14px;margin-top:10px;">완성된 결과물이 아니어도 괜찮아요. 켜져 있고, 눌러볼 수 있으면 됩니다.</p>
+            <div class="submit-steps">
+              <span>01 만들기</span><span>→</span><span>02 제출하기</span><span>→</span><span>03 탭으로 등록</span>
+            </div>
+            <a class="btn btn-primary" href="#">내 서비스 제출하기</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="wards">
+    <div class="wrap">
+      <div class="block-head reveal">
+        <div>
+          <div class="eyebrow">DEPT</div>
+          <h2>내 부서부터 시작해요</h2>
+        </div>
+        <p class="block-desc">같은 부서, 같은 고민. 면허 인증 후 바로 맞는 채널에 들어갈 수 있어요.</p>
+      </div>
+      <div class="ward-grid">
+        <div class="ward-card reveal"><h3>중환자실 (ICU)</h3><div class="ward-meta">312명 활동 중</div><div class="ward-snip">"CRRT 라인 인수인계, 다들 어떤 순서로 보세요?"</div></div>
+        <div class="ward-card reveal"><h3>응급실 (ER)</h3><div class="ward-meta">268명 활동 중</div><div class="ward-snip">"트리아지 메모, 음성으로 받아쓰기 해봤어요"</div></div>
+        <div class="ward-card reveal"><h3>수술실·회복실</h3><div class="ward-meta">154명 활동 중</div><div class="ward-snip">"기구 카운트 체크리스트 자동화 공유합니다"</div></div>
+        <div class="ward-card reveal"><h3>병동·외래</h3><div class="ward-meta">401명 활동 중</div><div class="ward-snip">"낙상 교육자료, 보호자용으로 쉽게 바꿔봤어요"</div></div>
+        <div class="ward-card reveal"><h3>요양·재활</h3><div class="ward-meta">187명 활동 중</div><div class="ward-snip">"장기요양 서식, 반복 입력 줄이는 법 있을까요"</div></div>
+        <div class="ward-card reveal"><h3>보건교사·산업간호사</h3><div class="ward-meta">129명 활동 중</div><div class="ward-snip">"응급처치 안내문 다국어로 만들었어요"</div></div>
+        <div class="ward-card reveal"><h3>신규간호사 (프리셉티)</h3><div class="ward-meta">233명 활동 중</div><div class="ward-snip">"첫 나이트, 뭐부터 봐야 할지 모르겠어요"</div></div>
+        <div class="ward-card reveal"><h3>해외취업·유학</h3><div class="ward-meta">96명 활동 중</div><div class="ward-snip">"NCLEX 공부 자료 정리 도구 만든 후기"</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="feed">
+    <div class="wrap">
+      <div class="block-head reveal">
+        <div><div class="eyebrow">FEED</div><h2>가볍게 씁니다, 부담 없이</h2></div>
+        <p class="block-desc">사진 한 장, 링크 하나, 투표 하나도 좋아요. 게시판 눈치 보지 않고 공유해요.</p>
+      </div>
+      <div class="feed-grid">
+        <article class="feed-card reveal">
+          <div class="feed-who"><span class="feed-name">ICU 3년차 올빼미</span><span class="tag night">N</span></div>
+          <p class="feed-body">방금 만든 투약 드립 계산기 공유해요. 체중·처방 농도만 넣으면 mL/hr 바로 나와요.</p>
+          <span class="feed-stat">반응 48 · 저장 21</span>
+        </article>
+        <article class="feed-card reveal">
+          <div class="feed-who"><span class="feed-name">외래 새싹</span><span class="tag day">D</span></div>
+          <p class="feed-body">나이트 끝나고 번아웃 어떻게 푸세요? 다들 본인만의 루틴 있나요.</p>
+          <span class="feed-stat">댓글 36 · 반응 59</span>
+        </article>
+        <article class="feed-card reveal">
+          <div class="feed-who"><span class="feed-name">보건교사 10년</span><span class="tag evening">E</span></div>
+          <p class="feed-body">학생 보호자용 응급처치 안내문, AI로 베트남어·중국어 번역본까지 만들었어요.</p>
+          <span class="feed-stat">저장 77 · 반응 112</span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="toolbox">
+    <div class="wrap">
+      <div class="block-head reveal">
+        <div><div class="eyebrow">TOOLBOX</div><h2>바로 꺼내 쓰는 자료함</h2></div>
+        <p class="block-desc">동료들이 검증한 프롬프트·템플릿. 저장해두고 그대로 써도 됩니다.</p>
+      </div>
+      <div class="filelist reveal">
+        <table>
+          <thead><tr><th>자료</th><th>설명</th><th>저장</th></tr></thead>
+          <tbody>
+            <tr><td class="fname" data-ext="md">SBAR_인수인계_프롬프트.md</td><td class="fdesc">음성 메모를 SBAR 형식으로 정리하는 프롬프트</td><td class="fcount">2,104</td></tr>
+            <tr><td class="fname" data-ext="md">NANDA_간호진단_추천_프롬프트.md</td><td class="fdesc">사례를 입력하면 관련 간호진단 후보를 제안</td><td class="fcount">1,532</td></tr>
+            <tr><td class="fname" data-ext="xlsx">투약계산_공식_시트.xlsx</td><td class="fdesc">드립·희석·소아 용량 계산 공식 모음</td><td class="fcount">3,318</td></tr>
+            <tr><td class="fname" data-ext="md">식약처_의약품API_연동가이드.md</td><td class="fdesc">실시간 의약품 정보 조회 도구에 붙이는 법</td><td class="fcount">861</td></tr>
+            <tr><td class="fname" data-ext="pdf">신규간호사_온보딩_체크리스트.pdf</td><td class="fdesc">프리셉터십 첫 3개월 점검 항목</td><td class="fcount">2,660</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="join">
+    <div class="wrap">
+      <div class="block-head reveal">
+        <div><div class="eyebrow">JOIN</div><h2>가입은 3단계면 충분해요</h2></div>
+      </div>
+      <p class="safe-note reveal">활동명과 캐릭터로 참여해요. 병원명·연차·직급은 공개하지 않아도 되고, 신상 캐묻기나 괴롭힘성 발언은 즉시 신고 처리돼요. 면허 인증은 가입할 때 한 번뿐이에요.</p>
+      <div class="steps">
+        <div class="step reveal"><div class="num">01</div><h3>간호사 면허 인증</h3><p>간편인증으로 본인확인 후, 보건복지부 면허정보를 실시간 조회해 즉시 인증돼요. 주민번호·면허증 사진은 저장하지 않아요.</p></div>
+        <div class="step reveal"><div class="num">02</div><h3>활동 프로필 만들기</h3><p>닉네임과 캐릭터를 고르고, 소속·연차 공개 범위를 직접 정해요.</p></div>
+        <div class="step reveal"><div class="num">03</div><h3>부서 채널 둘러보기</h3><p>내 부서·직무에 맞는 채널부터 시작하면 가장 빨라요.</p></div>
+      </div>
+      <div class="hero-ctas" style="margin-top:28px;">
+        <a class="btn btn-primary" href="#">지금 가입하기</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" style="border-bottom:none;">
+    <div class="wrap">
+      <div class="block-head reveal"><div><div class="eyebrow">FAQ</div><h2>자주 묻는 질문</h2></div></div>
+      <div class="reveal">
+        <details>
+          <summary>면허 인증할 때 제 개인정보는 어떻게 처리되나요?</summary>
+          <p>간편인증(카카오·PASS 등)으로 본인확인을 하고, 그 결과로 보건복지부 면허정보를 실시간 조회해 "인증 여부"만 받아와요. 주민번호와 면허증 원본은 저희 서버에 저장되지 않고, 남는 건 인증 여부·자격 종류·인증 일시, 그리고 중복가입 방지용 일방향 해시뿐이에요. 해시는 역으로 면허번호를 복원할 수 없는 값이에요.</p>
+        </details>
+        <details>
+          <summary>코딩을 전혀 몰라도 되나요?</summary>
+          <p>네. 대부분의 글과 도구는 "AI에게 이렇게 말했어요" 수준의 설명으로 시작해요. 처음부터 결과물을 만들지 않아도, 둘러보고 저장만 해도 괜찮습니다.</p>
+        </details>
+        <details>
+          <summary>간호대학생도 가입할 수 있나요?</summary>
+          <p>SN(간호대생) 인증으로 가입할 수 있어요. 다만 일부 임상 전용 채널은 RN 인증 후에 열립니다.</p>
+        </details>
+        <details>
+          <summary>체험관은 로그인 없이 써볼 수 있나요?</summary>
+          <p>네, 체험관은 공개 콘텐츠예요. 글쓰기·댓글·저장, 내 서비스 제출은 가입 후에 할 수 있어요.</p>
+        </details>
+        <details>
+          <summary>병원 이름이나 소속을 꼭 밝혀야 하나요?</summary>
+          <p>아니요. 공개 범위는 직접 설정할 수 있고, 기본값은 비공개예요.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <div class="foot-top">
+    <div class="logo">NURSE<span>VIBE</span></div>
+    <div class="foot-links">
+      <a href="#tryit">체험관</a><a href="#wards">부서</a><a href="#feed">피드</a><a href="#toolbox">도구함</a><a href="#">협업 문의</a>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <span>© 2026 NURSEVIBE</span>
+    <span>간호사가 만드는, 간호사를 위한 바이브코딩 커뮤니티</span>
+  </div>
+</footer>
+
+<script>
+  // vitals ticker — duplicated once for seamless 50% loop
+  var stats = [
+    ["LIVE","활성 멤버 <b>1,842명</b>"],
+    ["","이번 주 공유된 자동화 <b>127건</b>"],
+    ["","누적 도구함 자료 <b>340개</b>"],
+    ["","가동 중인 부서 채널 <b>9개</b>"],
+    ["","이번 달 챌린지 참여 <b>63명</b>"]
+  ];
+  var el = document.getElementById("ticker");
+  function render(){
+    var html = "";
+    stats.forEach(function(s){
+      html += '<div class="ticker-item">' + (s[0] ? '<span class="live-dot"></span>' : '') + s[1] + '</div>';
+    });
+    return html;
+  }
+  el.innerHTML = render() + render();
+
+  // reveal on scroll
+  var items = document.querySelectorAll(".reveal");
+  if ("IntersectionObserver" in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); } });
+    }, {threshold:.12});
+    items.forEach(function(it){ io.observe(it); });
+  } else {
+    items.forEach(function(it){ it.classList.add("in"); });
+  }
+
+  // ---- TRY IT: branch tabs ----
+  var tabs = [
+    {btn:"tab-nursemix", panel:"panel-nursemix", url:'<a href="https://nurse-mix.vercel.app/" target="_blank" rel="noopener">nurse-mix.vercel.app ↗</a>', badge:'<span class="live-dot"></span>실제 운영 중 · 누적 655명 체험'},
+    {btn:"tab-submit", panel:"panel-submit", url:"다음 체험, 당신의 서비스일 수 있어요", badge:"등록 대기 중인 탭"}
+  ];
+  tabs.forEach(function(t){
+    document.getElementById(t.btn).addEventListener("click", function(){
+      tabs.forEach(function(o){
+        var isActive = o.btn === t.btn;
+        document.getElementById(o.btn).setAttribute("aria-selected", isActive);
+        document.getElementById(o.panel).hidden = !isActive;
+      });
+      document.getElementById("chromeUrl").innerHTML = t.url;
+      document.querySelector(".live-badge").innerHTML = t.badge;
+    });
+  });
+
+  // ---- TRY IT: nurse-mix 미니 처방 체험 (데모용 간이 버전) ----
+  var rxTypes = [
+    {code:"Rx-01",name:"스테디케어형",desc:"변화보다 숙련을 쌓는 쪽이 편해요. 한 자리에서 깊어지는 힘이 있어요.",jobs:["수간호사 트랙","내시경실·PACU"],burnout:38},
+    {code:"Rx-02",name:"필드러너형",desc:"현장 밖 다른 길이 자꾸 궁금해져요. 넓게 보는 시야가 강점이에요.",jobs:["CRA","의료기기 마케팅"],burnout:61},
+    {code:"Rx-03",name:"데이터케어형",desc:"기록과 숫자를 정리할 때 오히려 편안함을 느껴요.",jobs:["데이터매니저(DM)","보험심사간호사"],burnout:45},
+    {code:"Rx-04",name:"리슨케어형",desc:"사람 말을 오래 들어주는 쪽에 소진보다 보람을 느껴요.",jobs:["상담간호사","방문간호사"],burnout:52},
+    {code:"Rx-05",name:"크라이시스러너형",desc:"긴박한 상황일수록 머리가 더 또렷해지는 편이에요.",jobs:["응급실 전담","검시조사관 트랙"],burnout:68},
+    {code:"Rx-06",name:"라이터케어형",desc:"경험을 글로 정리해서 남기는 데 재능이 있어요.",jobs:["Medical Writer","교육 콘텐츠 제작"],burnout:49}
+  ];
+  var selectedPain = [];
+  document.querySelectorAll("#rxPain .chip").forEach(function(chip){
+    chip.addEventListener("click", function(){
+      var v = chip.getAttribute("data-v");
+      var pressed = chip.getAttribute("aria-pressed") === "true";
+      chip.setAttribute("aria-pressed", String(!pressed));
+      if (pressed) { selectedPain = selectedPain.filter(function(x){ return x !== v; }); }
+      else { selectedPain.push(v); }
+    });
+  });
+  document.getElementById("rxForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var seed = document.getElementById("rxBirth").value + document.getElementById("rxDept").value + selectedPain.join(",");
+    var hash = 0;
+    for (var i = 0; i < seed.length; i++){ hash = (hash * 31 + seed.charCodeAt(i)) >>> 0; }
+    var t = rxTypes[hash % rxTypes.length];
+    document.getElementById("rxResultWrap").innerHTML =
+      '<div class="rx-card">' +
+        '<div class="rx-code">' + t.code + '</div>' +
+        '<div class="rx-name">' + t.name + '</div>' +
+        '<p class="rx-desc">' + t.desc + '</p>' +
+        '<div class="rx-jobs">' + t.jobs.map(function(j){ return "<span>"+j+"</span>"; }).join("") + '</div>' +
+        '<div class="burnout"><div class="burnout-label"><span>소진도 추정</span><span>' + t.burnout + '%</span></div>' +
+          '<div class="burnout-bar"><div class="burnout-fill" style="width:' + t.burnout + '%;background:' +
+          (t.burnout < 45 ? "var(--accent)" : t.burnout < 60 ? "var(--shift-day)" : "var(--pulse)") + '"></div></div></div>' +
+        '<div class="rx-footnote">데모용 간이 버전이에요. 사주 원국·연 단위 타이밍까지 포함한 전체 리포트는 <a href="https://nurse-mix.vercel.app/" target="_blank" rel="noopener">실제 서비스에서 →</a></div>' +
+      '</div>';
+  });
+</script>
