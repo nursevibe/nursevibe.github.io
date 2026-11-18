@@ -334,7 +334,7 @@
   <div class="login-card">
     <button type="button" class="login-close" id="loginClose" aria-label="닫기">×</button>
     <h3>로그인</h3>
-    <p>이메일로 받는 매직링크로 비밀번호 없이 로그인해요.</p>
+    <p>이메일로 받는 매직링크로 비밀번호 없이 로그인해요. 처음이면 자동으로 계정이 만들어져요.</p>
     <form class="mini-form" id="loginForm">
       <div>
         <label for="loginEmail">이메일</label>
@@ -342,6 +342,25 @@
       </div>
       <button type="submit" class="btn btn-primary" id="loginSubmitBtn">매직링크 보내기</button>
       <div class="submit-status" id="loginStatus"></div>
+    </form>
+  </div>
+</div>
+
+<div class="login-overlay" id="licenseOverlay">
+  <div class="login-card">
+    <button type="button" class="login-close" id="licenseClose" aria-label="닫기">×</button>
+    <h3>면허 인증</h3>
+    <p>RN/SN 여부를 확인해요. (지금은 테스트용 mock 인증이에요 — 실제 간편인증·보건복지부 조회는 아직 연결 전입니다.)</p>
+    <form class="mini-form" id="licenseForm">
+      <div>
+        <label for="licenseType">면허 종류</label>
+        <select id="licenseType" required>
+          <option value="RN">RN (간호사)</option>
+          <option value="SN">SN (간호대생)</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary" id="licenseSubmitBtn">인증하기</button>
+      <div class="submit-status" id="licenseStatus"></div>
     </form>
   </div>
 </div>
@@ -547,7 +566,7 @@
         <div class="step reveal"><div class="num">03</div><h3>부서 채널 둘러보기</h3><p>내 부서·직무에 맞는 채널부터 시작하면 가장 빨라요.</p></div>
       </div>
       <div class="hero-ctas" style="margin-top:28px;">
-        <a class="btn btn-primary" href="#">지금 가입하기</a>
+        <a class="btn btn-primary" href="#" id="joinCta">지금 가입하기</a>
       </div>
     </div>
   </section>
@@ -630,16 +649,65 @@
     });
   }
 
+  // ---- 면허 인증 (mock — 실제 간편인증/보건복지부 조회 전까지 임시) ----
+  var licenseOverlay = document.getElementById("licenseOverlay");
+  var licenseStatus = document.getElementById("licenseStatus");
+  var licenseVerified = false;
+
+  function closeLicense(){ licenseOverlay.className = "login-overlay"; }
+  function openLicense(){ licenseOverlay.className = "login-overlay show"; }
+
+  function checkLicense(userId){
+    sb.from("license_verifications").select("licensed").eq("user_id", userId).maybeSingle().then(function(res){
+      licenseVerified = !!(res.data && res.data.licensed);
+      if (!licenseVerified) openLicense();
+    });
+  }
+
+  document.getElementById("licenseClose").addEventListener("click", closeLicense);
+  licenseOverlay.addEventListener("click", function(e){ if (e.target === licenseOverlay) closeLicense(); });
+
+  document.getElementById("licenseForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var licenseType = document.getElementById("licenseType").value;
+    var btn = document.getElementById("licenseSubmitBtn");
+    btn.disabled = true;
+    licenseStatus.className = "submit-status show pending";
+    licenseStatus.textContent = "인증 확인 중...";
+    sb.functions.invoke("verify-license", { body: { license_type: licenseType } }).then(function(res){
+      btn.disabled = false;
+      var funcErr = res.error || (res.data && res.data.error);
+      if (funcErr){
+        licenseStatus.className = "submit-status show err";
+        licenseStatus.textContent = "인증 실패: " + (res.error ? res.error.message : res.data.error);
+        return;
+      }
+      licenseVerified = true;
+      licenseStatus.className = "submit-status show ok";
+      licenseStatus.textContent = "인증 완료!";
+      setTimeout(closeLicense, 1200);
+    });
+  });
+
+  document.getElementById("joinCta").addEventListener("click", function(e){
+    e.preventDefault();
+    if (!currentUser){
+      loginOverlay.className = "login-overlay show";
+      return;
+    }
+    if (!licenseVerified) openLicense();
+  });
+
   if (sb){
     sb.auth.getSession().then(function(res){
       var user = res.data.session && res.data.session.user;
       setSignedIn(user || null);
-      if (user) ensureProfile(user);
+      if (user){ ensureProfile(user); checkLicense(user.id); }
     });
     sb.auth.onAuthStateChange(function(_event, session){
       var user = session && session.user;
       setSignedIn(user || null);
-      if (user) ensureProfile(user);
+      if (user){ ensureProfile(user); checkLicense(user.id); }
     });
   }
 
