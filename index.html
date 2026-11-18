@@ -334,13 +334,13 @@
   <div class="login-card">
     <button type="button" class="login-close" id="loginClose" aria-label="닫기">×</button>
     <h3>로그인</h3>
-    <p>이메일로 받는 매직링크로 비밀번호 없이 로그인해요. 처음이면 자동으로 계정이 만들어져요.</p>
+    <p>이메일로 받는 널스링크로 비밀번호 없이 로그인해요. 처음이면 자동으로 계정이 만들어져요.</p>
     <form class="mini-form" id="loginForm">
       <div>
         <label for="loginEmail">이메일</label>
         <input type="email" id="loginEmail" required placeholder="you@example.com">
       </div>
-      <button type="submit" class="btn btn-primary" id="loginSubmitBtn">매직링크 보내기</button>
+      <button type="submit" class="btn btn-primary" id="loginSubmitBtn">널스링크 보내기</button>
       <div class="submit-status" id="loginStatus"></div>
     </form>
   </div>
@@ -622,7 +622,7 @@
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     : null;
 
-  // ---- 로그인 (매직링크) ----
+  // ---- 로그인 (널스링크) ----
   var loginOverlay = document.getElementById("loginOverlay");
   var loginLink = document.getElementById("loginLink");
   var loginStatus = document.getElementById("loginStatus");
