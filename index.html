@@ -223,10 +223,16 @@
   @media (max-width:780px){ .tryit-grid{grid-template-columns:1fr;} }
   .mini-form{display:flex;flex-direction:column;gap:14px;}
   .mini-form label{font-size:12.5px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:6px;}
-  .mini-form input, .mini-form select{
+  .mini-form input, .mini-form select, .mini-form textarea{
     width:100%;font-family:var(--font-kr);font-size:14px;padding:11px 12px;
     border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);
   }
+  .mini-form textarea{resize:vertical;min-height:72px;font-family:inherit;}
+  .submit-status{font-family:var(--font-mono);font-size:13px;padding:11px 14px;border-radius:9px;margin-top:4px;display:none;}
+  .submit-status.show{display:block;}
+  .submit-status.ok{background:var(--accent-soft);color:var(--accent-text);}
+  .submit-status.err{background:#C85A1E;color:#FFF6EE;}
+  .submit-status.pending{background:var(--bg-sunken);color:var(--ink-faint);}
   .chip-row{display:flex;flex-wrap:wrap;gap:8px;}
   .chip{
     font-family:var(--font-mono);
@@ -392,14 +398,42 @@
         </div>
 
         <div class="tab-panel" id="panel-submit" role="tabpanel" aria-labelledby="tab-submit" hidden>
-          <div class="submit-panel">
+          <div class="submit-panel" style="text-align:left;max-width:460px;">
             <div class="challenge-pill">CHALLENGE · 11월 · 인수인계 5분 단축하기</div>
             <h3 style="font-size:20px;">당신이 만든 서비스도 여기 탭으로 올라와요</h3>
-            <p style="color:var(--ink-soft);font-size:14px;margin-top:10px;">완성된 결과물이 아니어도 괜찮아요. 켜져 있고, 눌러볼 수 있으면 됩니다.</p>
-            <div class="submit-steps">
-              <span>01 만들기</span><span>→</span><span>02 제출하기</span><span>→</span><span>03 탭으로 등록</span>
-            </div>
-            <a class="btn btn-primary" href="#">내 서비스 제출하기</a>
+            <p style="color:var(--ink-soft);font-size:14px;margin-top:6px;margin-bottom:18px;">완성된 결과물이 아니어도 괜찮아요. 켜져 있고, 눌러볼 수 있으면 됩니다. 제출하면 운영진 확인 후 공개 탭에 등록돼요.</p>
+            <form class="mini-form" id="serviceForm">
+              <div>
+                <label for="svcName">서비스 이름</label>
+                <input type="text" id="svcName" required maxlength="60" placeholder="예: 너스mix">
+              </div>
+              <div>
+                <label for="svcUrl">서비스 URL</label>
+                <input type="url" id="svcUrl" required placeholder="https://...">
+              </div>
+              <div>
+                <label for="svcDesc">한 줄 소개</label>
+                <textarea id="svcDesc" required maxlength="200" placeholder="어떤 반복 업무를 덜어주는 도구인가요?"></textarea>
+              </div>
+              <div>
+                <label for="svcDept">관련 부서</label>
+                <select id="svcDept">
+                  <option>병동·외래</option><option>중환자실</option><option>응급실</option>
+                  <option>수술실·회복실</option><option>요양·재활</option><option>보건교사·산업간호사</option>
+                  <option>신규간호사(프리셉티)</option><option>해외취업·유학</option>
+                </select>
+              </div>
+              <div>
+                <label for="svcName2">제출자 이름</label>
+                <input type="text" id="svcName2" required maxlength="40" placeholder="실명 또는 활동명">
+              </div>
+              <div>
+                <label for="svcEmail">연락받을 이메일</label>
+                <input type="email" id="svcEmail" required placeholder="승인 결과를 보내드려요">
+              </div>
+              <button class="btn btn-primary" type="submit" id="svcSubmitBtn">내 서비스 제출하기</button>
+              <div class="submit-status" id="svcStatus"></div>
+            </form>
           </div>
         </div>
       </div>
@@ -534,7 +568,15 @@
   </div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
+  // TODO: Supabase 프로젝트 만든 뒤 Settings > API 에서 복사해 채우기
+  var SUPABASE_URL = "YOUR_SUPABASE_URL";
+  var SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+  var sb = (SUPABASE_URL.indexOf("YOUR_") !== 0 && window.supabase)
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
+
   // vitals ticker — duplicated once for seamless 50% loop
   var stats = [
     ["LIVE","활성 멤버 <b>1,842명</b>"],
@@ -617,5 +659,43 @@
           (t.burnout < 45 ? "var(--accent)" : t.burnout < 60 ? "var(--shift-day)" : "var(--pulse)") + '"></div></div></div>' +
         '<div class="rx-footnote">데모용 간이 버전이에요. 사주 원국·연 단위 타이밍까지 포함한 전체 리포트는 <a href="https://nurse-mix.vercel.app/" target="_blank" rel="noopener">실제 서비스에서 →</a></div>' +
       '</div>';
+  });
+
+  // ---- TRY IT: 내 서비스 제출 ----
+  document.getElementById("serviceForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var statusEl = document.getElementById("svcStatus");
+    var btn = document.getElementById("svcSubmitBtn");
+    statusEl.className = "submit-status show pending";
+    statusEl.textContent = "제출 중...";
+
+    if (!sb){
+      statusEl.className = "submit-status show err";
+      statusEl.textContent = "제출 기능이 아직 연결 중이에요. 잠시 후 다시 시도해 주세요.";
+      return;
+    }
+
+    var payload = {
+      name: document.getElementById("svcName").value.trim(),
+      url: document.getElementById("svcUrl").value.trim(),
+      description: document.getElementById("svcDesc").value.trim(),
+      department: document.getElementById("svcDept").value,
+      submitter_name: document.getElementById("svcName2").value.trim(),
+      submitter_email: document.getElementById("svcEmail").value.trim(),
+      status: "pending"
+    };
+
+    btn.disabled = true;
+    sb.from("services").insert(payload).then(function(res){
+      btn.disabled = false;
+      if (res.error){
+        statusEl.className = "submit-status show err";
+        statusEl.textContent = "제출에 실패했어요: " + res.error.message;
+        return;
+      }
+      statusEl.className = "submit-status show ok";
+      statusEl.textContent = "제출 완료! 운영진 확인 후 승인되면 이메일로 알려드려요.";
+      document.getElementById("serviceForm").reset();
+    });
   });
 </script>

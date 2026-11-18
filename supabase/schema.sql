@@ -32,9 +32,13 @@ create table license_verifications (
 
 -- 3) TRY IT branch — 멤버가 직접 런칭한 서비스(너스mix류)를 올리는 디렉토리.
 --    기본 status는 pending, admin이 승인해야 공개 탭에 노출된다.
+--    로그인/면허 인증이 아직 없어서 submitted_by는 nullable — 익명 제출을
+--    submitter_name/email로 받고, 나중에 계정 시스템이 붙으면 연결한다.
 create table services (
   id uuid primary key default gen_random_uuid(),
-  submitted_by uuid not null references profiles(id) on delete cascade,
+  submitted_by uuid references profiles(id) on delete set null,
+  submitter_name text not null,
+  submitter_email text not null,
   name text not null,
   url text not null,
   description text not null,
@@ -62,8 +66,8 @@ create policy "본인 인증결과만 조회" on license_verifications
 
 create policy "승인된 서비스는 전체 공개" on services
   for select using (status = 'approved' or submitted_by = auth.uid());
-create policy "로그인 유저는 자기 서비스 제출 가능" on services
-  for insert with check (auth.uid() = submitted_by);
+create policy "누구나 서비스 제출 가능 (pending으로만)" on services
+  for insert with check (status = 'pending');
 create policy "admin만 승인/반려 가능" on services
   for update using (
     exists (select 1 from profiles where id = auth.uid() and role = 'admin')
